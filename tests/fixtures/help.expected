@@ -1,0 +1,8 @@
+Usage: morse [-a|--print-tree] < input.txt
+       morse --help
+
+Decode uppercase letters and digits using data/morse.txt.
+Separate codes with spaces or tabs; use '/' as a word separator.
+
+  -a, --print-tree  Print mapped tree nodes in preorder after decoding.
+  --help           Show this help and exit.

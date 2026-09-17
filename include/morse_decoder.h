@@ -16,7 +16,7 @@ typedef enum {
  * Decode one newline-free line without modifying it or performing stream I/O.
  * The caller owns the output buffer; its content is usable only on success.
  * error_token, when provided, receives the one-based failing token (zero on success).
- * Only spaces separate tokens in this compatibility stage. A standalone '/' emits a space.
+ * Spaces and tabs separate tokens. A standalone '/' emits a space.
  */
 MorseDecodeStatus morse_decode_line(const MorseTree *tree, const char *line, char *decoded,
                                     size_t capacity, size_t *error_token);

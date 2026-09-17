@@ -4,16 +4,16 @@ A C17 command-line decoder using a binary trie built from a text mapping. Dots
 select left children, dashes select right children, and `/` separates words.
 Created by Lucas Paulo Martins Mariz as a 2019 data structures assignment.
 
-This modernization is currently at roadmap phases 1-3: project organization,
-module extraction, and regression coverage. The historical table's nine incorrect
-letter mappings and legacy output formatting are intentionally retained until
-phase 4. See the [decoding contract](docs/decoding-contract.md) for current versus
-planned behavior. This is not yet a standards-correct Morse decoder.
+Roadmap phases 1-6 now cover project organization, module extraction, corrected
+international alphanumeric mappings, validated input, comprehensive tests, and CI.
+See the [decoding contract](docs/decoding-contract.md) for behavior, limits, and
+compatibility changes. The full historical results summary remains phase 7.
 
 ## Build and run
 
-Requirements: a C17 compiler (GCC or Clang) and GNU Make. Tests also need a POSIX
-shell, `timeout`, GNU-compatible `head`, and standard command-line tools.
+Requirements: a C17 compiler (GCC or Clang) and GNU Make. Tests also need a glibc/POSIX
+host, a GNU-compatible linker, a POSIX shell, `awk`, `timeout`, GNU-compatible `head`,
+and standard command-line tools. The application itself has no third-party dependencies.
 
 Run from the repository root so the default `data/morse.txt` path resolves:
 
@@ -21,17 +21,24 @@ Run from the repository root so the default `data/morse.txt` path resolves:
 make
 ./morse < examples/sample.in
 ./morse -a < examples/sample.in
+./morse --print-tree < examples/sample.in
+./morse --help
 ```
 
-The sample decodes to `SOS HELP`; the current output has no final newline. `-a`
-appends the mapped tree in preorder. It currently joins its first record to the
-last message; that historical defect is covered by a temporary regression fixture.
+The sample prints `SOS HELP` followed by a newline. `-a` or `--print-tree` appends
+the mapped tree in preorder, with each record on a separate line. Spaces and tabs
+separate codes; a standalone `/` emits a word separator. LF, CRLF, and EOF without
+a final newline are accepted, including dynamically read long lines.
+
+Invalid input or arguments produce an English diagnostic on standard error and a
+nonzero exit status. An invalid line is omitted, although earlier valid lines may
+already have been printed. The bundled table supports uppercase `A-Z` and `0-9` only.
 
 ## Development
 
 | Command | Purpose |
 | --- | --- |
-| `make test` | Direct C module tests and exact-byte CLI baseline comparisons |
+| `make test` | Module, exhaustive, fault-injection, and exact-byte CLI tests |
 | `make sanitize` | The same suite with AddressSanitizer and UBSan |
 | `make coverage` | Run instrumented tests and print gcov coverage |
 | `make analyze` | Compile with the GCC static analyzer |
@@ -53,8 +60,12 @@ On a compatible host, use `make sanitize ASAN_OPTIONS=detect_leaks=1`.
 `examples/` contains runnable input; and `tests/` contains direct tests and
 historical/CLI fixtures.
 
+The [CI workflow](.github/workflows/ci.yml) runs GCC and Clang tests, sanitizers with
+leak detection, formatting, static analysis, and coverage. Every job and step has
+an explicit timeout. Hosted CI can only be confirmed after an approved push.
+
 The [original report](docs/original-report-2019.pdf) and
 [extended historical tree diagram](docs/figures/morse-tree.png) are preserved
 unchanged. The chart shows additional symbols outside the application's scope.
-The complete English results/evidence summary and CI workflow remain scheduled
-for later roadmap phases; no hosted CI result is claimed at this stage.
+The complete English results/evidence summary remains scheduled for phase 7;
+no hosted CI result is claimed at this stage.

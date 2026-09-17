@@ -1,142 +1,125 @@
 # Decoding Contract
 
-This project is becoming **Morse Tree Decoder** (`morse-tree-decoder`). It remains
-a C command-line decoder based on a file-backed binary trie. A dot selects the
-left child and a dash selects the right child. The root and intermediate nodes
-may be empty; only mapped nodes represent decoded characters.
+Morse Tree Decoder (`morse-tree-decoder`) is a C command-line decoder based on a
+file-backed binary trie. A dot selects the left child and a dash selects the
+right child. The root and intermediate nodes may be empty; only mapped nodes
+represent decoded characters. Roadmap phases 4-6 implement the contract below.
 
-This document distinguishes the transitional implementation after roadmap phases
-1-3 from the intended phase 4 behavior. Snapshot tests of historical defects are
-temporary characterization tests, not a promise to preserve those defects forever.
-
-## Current compatibility stage
-
-### Build, execution, and mapping location
+## Build and command line
 
 Build from the repository root with `make`, then execute:
 
 ```sh
 ./morse < examples/sample.in
 ./morse -a < examples/sample.in
+./morse --print-tree < examples/sample.in
+./morse --help
 ```
 
 The executable name remains `morse`; the selected repository name does not rename
-the binary or change the remote yet. The application loads `data/morse.txt`
-relative to its working directory, so these commands must run from the repository
-root. There is no automatic search for the table beside the executable, no
-`--table` option, and no dependency on the old `src/` working directory.
+the binary or change the remote yet. Accept no arguments or exactly one of
+`-a`, `--print-tree`, and `--help`. Unknown options, filenames, repeated options,
+and extra arguments fail with an English diagnostic and a nonzero exit status.
 
-The table module accepts an explicit path independently of the CLI. Compilation
-may override `MORSE_TABLE_PATH` using `CPPFLAGS` when a different deployment path
-is necessary; the default is intentionally not an absolute build-machine path.
+Help is printed on standard output and does not read input or open the table.
+Normal decoding loads `data/morse.txt` relative to the working directory, so the
+documented commands run from the repository root. There is no automatic search
+beside the executable or `--table` option. The table module accepts an explicit
+path for direct use/tests, and compilation can override `MORSE_TABLE_PATH` through
+`CPPFLAGS`. The default is not an absolute build-machine path.
 
-The application currently recognizes `-a` only when it is the sole argument.
-Other arguments are ignored, matching the original program. Help, long aliases,
-and strict option validation are deferred to phase 4.
+## Mapping format
 
-### Transitional mapping and input
+The bundled table contains international Morse mappings for uppercase `A-Z` and
+digits `0-9`. This project does not add lowercase, punctuation, accented letters,
+an encoder, audio, or a legacy-mode option.
 
-- The bundled table has 26 uppercase letters and 10 digits. Its nine incorrect
-  letter mappings are retained until phase 4 to separate algorithm extraction
-  from functional corrections.
-- A table record contains a single-byte symbol and a nonempty dot/dash code.
-  This stage retains the old maximum of nine signals, with bounded parsing.
-  Blank lines are skipped. Repeated codes overwrite the earlier symbol through
-  the trie insertion API; duplicate-table validation is not complete yet.
-- Spaces separate message tokens. A standalone `/` produces exactly one space,
-  including leading, trailing, and consecutive separator tokens. Tabs are not
-  token delimiters yet.
-- Messages are read using the original 500-byte input buffer. Each successful
-  `fgets` call forms a chunk of at most 499 bytes, not necessarily a complete
-  physical line. Only a final LF is removed. CRLF, embedded NUL, and long-line
-  behavior are not part of the supported compatibility input.
-- The line decoder borrows an immutable string and a caller-owned output buffer.
-  It performs no stream I/O or allocation, returns a status, and identifies a
-  failing token by its one-based index. Its output is only usable on success.
+Each nonblank record contains exactly one supported symbol, whitespace, and one
+code of 1-5 dot/dash signals:
 
-### Transitional output and failures
+```text
+E .
+T -
+A .-
+```
 
-For supported valid input, decoded chunks are separated by one LF, with no
-additional LF after the last chunk. Empty input emits nothing. Blank input chunks
-are preserved. `-a` appends mapped nodes in preorder (root, left, right), one
-`symbol code` record per line, omitting empty nodes.
+Spaces/tabs may surround fields and separate them. Blank lines, LF, CRLF, and EOF
+without a final newline are accepted. Internal/bare CR, comments, extra fields,
+invalid symbols/signals, oversized codes, NUL, non-ASCII, and unsupported controls
+are rejected. Records are read as complete dynamically buffered lines, not fixed chunks.
 
-The last decoded chunk is still joined directly to the first tree record. For
-example, `... --- ...` with `-a` begins with `SOSE .`, not two separate lines.
-This is a documented format defect scheduled for phase 4.
+A custom table may contain a subset of the supported alphabet, but must be nonempty.
+Both symbols and codes must be unique. The loader checks uniqueness before insertion;
+the low-level trie operation still replaces the symbol when reinserting a code,
+preserving that original data-structure operation independently of the file contract.
 
-Safe module boundaries already check table opening/parsing, allocations, failed
-lookups, buffer capacity, and basic stream errors. Failures produce English
-diagnostics on standard error and a nonzero exit status. Partial trees are freed.
-Invalid message chunks are decoded before any of their output is printed; earlier
-successful chunks may already have been emitted. The tree is omitted on a failure.
-Undefined behavior, permissive malformed parsing, and crashes are not compatibility
-requirements. Complete validation and deterministic failure injection remain later work.
+## Message format
 
-## Intended phase 4 contract
+Each physical input line is a separate message. Spaces and tabs delimit tokens.
+A standalone `/` emits exactly one space, including leading, trailing, and
+consecutive `/` tokens. Attached forms such as `.../---` are invalid.
 
-These roadmap defaults define the next phase; they are not all implemented in the
-current stage. Completing phases 1-3 does not execute or authorize later phases.
+Accept LF, CRLF, and an unterminated final line. Blank lines and whitespace-only
+lines decode to empty lines. Empty input produces no decoded output. Codes not
+present in the loaded table, invalid signals, oversized tokens, NUL, non-ASCII,
+DEL, and unsupported controls fail rather than becoming guessed letters or dashes.
+An internal or unterminated CR is invalid; only a CR immediately before LF is removed.
 
-1. Ship international mappings for uppercase `A-Z` and `0-9`, with no lowercase,
-   punctuation, accented characters, encoder, or legacy CLI mode.
-2. Keep `morse` and `-a`; add English `--help` and `--print-tree`. Reject unknown
-   options and extra arguments with a nonzero exit status.
-3. Decode complete physical lines using checked dynamic buffer growth. Accept LF,
-   CRLF, and EOF without a final newline. Every decoded line, including an empty
-   line, has one output LF. Empty input still emits nothing.
-4. Treat spaces and tabs as token delimiters. A standalone `/` emits one space;
-   leading, trailing, and repeated separators are allowed. Attached forms such
-   as `.../---` are invalid. No comment syntax is added.
-5. Reject invalid signals, unknown codes, embedded NUL, and unsupported control
-   bytes. Do not reinterpret them as dashes or guess a character.
-6. Finish decoding each line before writing it. On error, omit that line and the
-   tree, report its line/token in English, and exit nonzero. Previous valid lines
-   may already have been printed; the whole input is not buffered.
-7. Print the tree only after successful decoding, with each record on a separate
-   line and without joining it to the last message.
-8. Retain the repository-root `data/morse.txt` default and diagnose missing files.
-   Arbitrary-working-directory resolution and `--table` remain out of scope.
-9. Restrict mapping symbols to uppercase letters and digits, and codes to at most
-   five signals for this project's supported alphabet. Reject empty tables,
-   malformed records, duplicates of either symbol or code, and oversized fields.
-   Accept blank lines, record whitespace, LF/CRLF, and an unterminated final record.
-   Do not require a custom table to contain all 36 symbols.
-10. Check allocation growth arithmetic and read, write, flush, and relevant close
-    failures; release all owned state on every exit path.
+The input buffer grows geometrically with checked arithmetic. Objects are limited
+to `PTRDIFF_MAX` bytes and available memory; there is no fixed 500-byte line limit.
+The application reserves sufficient decoded space before processing a line, and
+writes it only after complete successful decoding.
 
-The low-level insertion operation may continue to replace a code's value; the
-table loader, not the trie, enforces uniqueness in a file. This keeps the original
-data-structure operation and the stricter file contract separate.
+## Output, ownership, and failure handling
+
+Every successful decoded line ends with exactly one LF, including empty lines.
+Output is streamed: if a later line is invalid, prior valid lines may already be
+printed, but the invalid line and the optional tree are omitted. Diagnostics use
+standard error, identify the line/token where applicable, and return nonzero.
+
+`-a` and `--print-tree` print all mapped nodes after successful decoding, one
+`symbol code` record per line, in preorder (root, left, right). Empty/root nodes
+are omitted. The tree is never concatenated to the last message. With empty input,
+the tree may be printed alone.
+
+Allocation, table opening/parsing, stream reading/writing/flushing, and table-close
+failures are checked. I/O errors can leave already emitted output; line-level
+validation is not an all-or-nothing transaction for the whole file. All partial
+trees and buffers are destroyed on failure. Application streams are borrowed
+and remain the caller's responsibility; the table loader closes its own file.
+
+The decoder borrows an immutable newline-free string and caller-owned output buffer,
+does no stream I/O/allocation, and returns a status plus an optional one-based failing
+token. Its output is only usable on success. Tree lookup entries are borrowed until
+modification/destruction. `TextBuffer` values start with `{0}`, own their storage,
+and remain destroyable after any failure.
 
 ## Historical evidence and deliberate corrections
 
 The [unchanged 2019 report](original-report-2019.pdf) describes trie construction,
 lookup, a literal input example, preorder printing, and theoretical complexity.
 It contains no enumerated test suite, timing measurements, or expected output for
-that example. The archived PDF is intentionally preserved in its original language.
+that example. The archived PDF is preserved in its original language.
 
 The [archived diagram](figures/morse-tree.png) was already tracked in the original
-repository and also appears in the PDF. Its external origin/license is not stated
-there; no new attribution or license is invented. It is an extended Morse chart
-with punctuation, accented letters, and multi-character symbols that this program
-does not support, not an exact rendering of the original buggy table.
+repository and appears in the PDF. Its external origin/license is not stated
+there; no new attribution or license is invented. It shows punctuation, accented
+letters, and multi-character symbols outside this application's supported alphabet,
+and is not an exact rendering of the original buggy table.
 
-The exact report input is kept in
+The literal report input remains unchanged in
 `tests/fixtures/historical/report-example.in`:
 
 ```text
 --- ... / -. . - --- ... / --.- .. .
 ```
 
-The unmodified baseline compiled from commit `96d7bf0` was exercised during this
-refactoring review, and emitted `OS MEDOS QUE`, without a final LF. The extracted
-implementation must currently produce the same bytes. This output was reproduced
-now, not recorded in the 2019 PDF. With international mappings the unchanged input
-will decode to `OS NETOS QIE`; that is a reference expectation until phase 4 runs.
-Do not edit the input to silently change `QIE` into `QUE`.
+The original baseline compiled from commit `96d7bf0` emitted `OS MEDOS QUE` without
+a final LF during this review. The corrected implementation emits `OS NETOS QIE`
+with a final LF, verified by an active CLI test. Neither output was recorded in
+the PDF. Do not edit the source input to silently turn `QIE` into `QUE`.
 
-The mapping corrections follow
+The nine mapping corrections follow
 [ITU-R M.1677-1, Annex 1](https://www.itu.int/dms_pubrec/itu-r/rec/m/R-REC-M.1677-1-200910-I!!PDF-E.pdf):
 
 | Symbol | Historical code | Correct code |
@@ -151,27 +134,42 @@ The mapping corrections follow
 | T | `-..` | `-` |
 | U | `..` | `..-` |
 
-## Tests and next-phase migration
+The old missing-final-LF, message/tree join, ignored arguments, fixed chunks, and
+unsafe errors are deliberately corrected, not compatibility requirements. Original
+mapping/output fixtures and `tests/run_baseline.sh` are archive-only; they do not
+govern active corrected CLI output.
 
-`make test` runs direct C module tests and bounded POSIX CLI characterization
-tests. Integration comparisons check exact stdout bytes, empty stderr, and a zero
-exit status. Every invocation has a timeout. The same 12 CLI cases were run
-successfully against the original executable before accepting the extracted code.
+## Automated verification
 
-Expected text fixtures end with LF for editors. The test runner explicitly removes
-only that final byte where the legacy output must lack a final LF. Tree fixtures
-are compared without normalization, including the known message/tree boundary defect.
+`make test` runs direct C module tests, independent reference-based exhaustive
+tests, allocation/I/O failure injection, and exact-byte POSIX CLI comparisons.
+Tests do not derive expected characters from the active table, ignore final LFs,
+or accept a crash/timeout as an expected validation failure.
 
-| Planned rule | Current evidence | Phase 4/5 follow-up |
-| --- | --- | --- |
-| 36 mappings and trie direction | Legacy alphabet/digits, insertion/lookup tests | Independent corrected oracle, all 62 short codes |
-| Word separators and whitespace | English words, repeated spaces/separators | Tabs, CRLF, invalid attached separators |
-| Physical lines and output LF | Multiline, blank, unterminated input snapshots | Dynamic boundaries, final LF correction |
-| CLI and preorder | Empty-input tree, joined-output and argument snapshots | Help, alias, strict arguments, corrected boundary |
-| Mapping files | Original bytes, malformed/missing-table checks | Empty/duplicate/oversized records, control bytes |
-| Ownership and failures | Placeholder initialization, statuses, sanitizer target | Allocation/I/O injection, overflow, exhaustive cleanup |
+The finite exhaustive domains are all 62 nonempty dot/dash sequences of lengths
+1-5 (36 mapped, 26 unmapped) and all 1,296 ordered character pairs, each with and
+without a word separator (2,592 cases). Five insertion permutations must produce
+the same mappings and preorder. These are bounded exhaustive domains, not a claim
+to have tested every possible unbounded input.
 
-In phase 4, move defect snapshots to archive-only characterization checks and
-replace active CLI expectations with the corrected contract. Keep the original
-mapping fixture unchanged. Do not weaken tests by ignoring newlines or generating
-expected characters from the active mapping file.
+The failure matrix checks every project allocation occurrence in a successful
+multi-line run, including tree construction and input/output buffer growth. Tracked
+allocations must all be freed after each injected failure. Additional checks exercise
+oversized growth, empty-line allocation, failed reads, permission denial, table close,
+output writes/newlines, tree recursion, help, and flush errors. Test-only glibc custom
+streams and GNU-compatible linker wrapping make failures deterministic even when
+running as a privileged user. They are not application dependencies.
+
+CLI cases cover every character, the English sample, the literal report input,
+whitespace/separators, blank/unterminated/CRLF lines, old/new buffer boundaries,
+long/many-line input, invalid codes/bytes/arguments, table-path behavior, help,
+tree aliases/boundaries, later-line failure, and buffered output failure. Subprocess
+timeouts are explicit, and sanitizer/coverage builds run the same complete suite.
+
+[CI](../.github/workflows/ci.yml) has GCC/Clang jobs, sanitizer/leak checks, and
+formatting/static-analysis/coverage checks. Every job and step has a timeout,
+repository permissions are read-only, and checkout does not persist credentials.
+Checkout is pinned to the [verified v7.0.1 release commit](https://github.com/actions/checkout/releases/tag/v7.0.1).
+Runner tools were checked against the [official Ubuntu 24.04 image inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md).
+A hosted run requires an approved commit/push; local verification is not presented
+as hosted CI success.

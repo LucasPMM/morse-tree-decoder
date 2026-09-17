@@ -37,11 +37,11 @@ MorseDecodeStatus morse_decode_line(const MorseTree *tree, const char *line, cha
     size_t token_index = 0;
     const char *cursor = line;
     while (*cursor != '\0') {
-        cursor += strspn(cursor, " ");
+        cursor += strspn(cursor, " \t");
         if (*cursor == '\0') {
             break;
         }
-        size_t length = strcspn(cursor, " ");
+        size_t length = strcspn(cursor, " \t");
         char symbol;
         ++token_index;
         if (error_token != NULL) {

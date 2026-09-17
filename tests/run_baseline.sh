@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+# Archive-only runner for an original executable; not part of the active make test suite.
 # All invocations are bounded. Fixtures preserve legacy bytes, including formatting defects.
 binary=${1:?Usage: sh tests/run_baseline.sh BINARY}
 repo_dir=$(pwd)
@@ -62,10 +63,10 @@ run_case digits no-newline normal
 run_case words no-newline normal
 run_case multiple-lines no-newline normal
 run_case blank-lines no-newline normal
-run_case all-legacy-symbols no-newline normal
+run_case historical/all-symbols no-newline normal
 run_case historical/report-example no-newline normal
 run_case words no-newline no-newline
-run_case tree-only exact normal -a
+run_case historical/tree-only exact normal -a
 run_case historical/message-tree-joined exact normal -a
 run_case words no-newline normal ignored-option
 run_case words no-newline normal -a extra

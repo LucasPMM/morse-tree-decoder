@@ -4,8 +4,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-/* Retain the original nine-signal capacity until the phase 4 contract is implemented. */
-#define MORSE_CODE_CAPACITY 10
+/* This project supports the 26 letters and 10 digits, whose codes use at most five signals. */
+#define MORSE_MAX_CODE_LENGTH 5
+#define MORSE_CODE_CAPACITY (MORSE_MAX_CODE_LENGTH + 1)
 
 typedef struct {
     char code[MORSE_CODE_CAPACITY];
