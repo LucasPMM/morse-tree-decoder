@@ -12,8 +12,7 @@ international mapping or final output format.
   in the report. The runner removes the expected fixture's editor-friendly final
   LF because the original output has none.
 - `message-tree-joined.*` records the known missing separator between a decoded
-  message and the first preorder record. This expectation must stop governing
-  the active CLI when phase 4 fixes that defect.
+  message and the first preorder record. It no longer governs the corrected CLI.
 
 `tree-only.*` preserves the old table's preorder output. `tests/run_baseline.sh`
 is an archive-only runner for an original executable, not part of active `make test`.

@@ -66,8 +66,28 @@ fixture() {
     run_success "$name" "$@"
 }
 
+extract_readme_example() {
+    # Keep documentation examples executable without introducing another test dependency.
+    awk -v marker="<!-- example: $1 -->" '
+        $0 == marker {found=1; next}
+        found && !inside {if ($0 != "```text") exit 1; inside=1; next}
+        inside && $0 == "```" {closed=1; exit}
+        inside {print}
+        END {if (!closed) exit 1}
+    ' "$repo_dir/README.md" > "$2" || fail "$1 (missing README example block)"
+}
+
 # Active expectations are never normalized: final LF is part of the new contract.
 cmp -s "$repo_dir/examples/sample.in" "$fixture_dir/words.in"
+extract_readme_example sample-input "$temp_dir/input"
+extract_readme_example sample-output "$temp_dir/expected"
+cmp -s "$temp_dir/input" "$repo_dir/examples/sample.in" || fail 'README sample input drift'
+cmp -s "$temp_dir/expected" "$fixture_dir/words.expected" || fail 'README sample output drift'
+run_success readme-sample
+extract_readme_example report-input "$temp_dir/input"
+cmp -s "$temp_dir/input" "$fixture_dir/historical/report-example.in" || fail 'README report input drift'
+cp "$fixture_dir/report-example.expected" "$temp_dir/expected"
+run_success readme-report-example
 fixture unaffected-letters unaffected-letters.in unaffected-letters.expected
 fixture digits digits.in digits.expected
 fixture all-symbols all-symbols.in all-symbols.expected

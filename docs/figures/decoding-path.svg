@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 455" role="img" aria-labelledby="title description">
+  <title id="title">Partial Morse trie and the decoding path for S</title>
+  <desc id="description">An empty root branches left on dot to E and right on dash to T. The next level contains I, A, N, and M. Three left dot edges reach S. Only part of the supported alphabet is shown.</desc>
+  <style>
+    text { font-family: sans-serif; fill: #17212b; text-anchor: middle; }
+    .heading { font-size: 20px; font-weight: bold; }
+    .note { font-size: 16px; }
+    .edge { stroke: #64748b; stroke-width: 2; }
+    .path { stroke: #0369a1; stroke-width: 4; }
+    .node { fill: #ffffff; stroke: #64748b; stroke-width: 2; }
+    .selected { fill: #e0f2fe; stroke: #0369a1; stroke-width: 3; }
+    .signal { font-family: monospace; font-size: 20px; font-weight: bold; }
+    .symbol { font-size: 20px; font-weight: bold; }
+    .code { font-family: monospace; font-size: 14px; }
+  </style>
+  <rect width="900" height="455" rx="12" fill="#f8fafc"/>
+  <text text-anchor="middle" class="heading" x="450" y="29">Dot (.) goes left; dash (-) goes right</text>
+
+  <path class="path" d="M450 81 L225 170"/>
+  <path class="edge" d="M450 81 L675 170"/>
+  <path class="path" d="M225 170 L110 265"/>
+  <path class="edge" d="M225 170 L335 265"/>
+  <path class="edge" d="M675 170 L565 265"/>
+  <path class="edge" d="M675 170 L790 265"/>
+  <path class="path" d="M110 265 L55 360"/>
+  <path class="edge" d="M110 265 L165 360"/>
+
+  <text text-anchor="middle" class="signal" x="330" y="111">.</text>
+  <text text-anchor="middle" class="signal" x="570" y="111">-</text>
+  <text text-anchor="middle" class="signal" x="156" y="211">.</text>
+  <text text-anchor="middle" class="signal" x="293" y="211">-</text>
+  <text text-anchor="middle" class="signal" x="607" y="211">.</text>
+  <text text-anchor="middle" class="signal" x="744" y="211">-</text>
+  <text text-anchor="middle" class="signal" x="65" y="310">.</text>
+  <text text-anchor="middle" class="signal" x="155" y="310">-</text>
+
+  <ellipse class="selected" cx="450" cy="81" rx="70" ry="27"/>
+  <text text-anchor="middle" class="note" x="450" y="87">Empty root</text>
+  <g data-code="." data-symbol="E">
+    <circle class="selected" cx="225" cy="170" r="31"/>
+    <text text-anchor="middle" class="symbol" x="225" y="169">E</text>
+    <text text-anchor="middle" class="code" x="225" y="187">.</text>
+  </g>
+  <g data-code="-" data-symbol="T">
+    <circle class="node" cx="675" cy="170" r="31"/>
+    <text text-anchor="middle" class="symbol" x="675" y="169">T</text>
+    <text text-anchor="middle" class="code" x="675" y="187">-</text>
+  </g>
+  <g data-code=".." data-symbol="I">
+    <circle class="selected" cx="110" cy="265" r="31"/>
+    <text text-anchor="middle" class="symbol" x="110" y="264">I</text>
+    <text text-anchor="middle" class="code" x="110" y="282">..</text>
+  </g>
+  <g data-code=".-" data-symbol="A">
+    <circle class="node" cx="335" cy="265" r="31"/>
+    <text text-anchor="middle" class="symbol" x="335" y="264">A</text>
+    <text text-anchor="middle" class="code" x="335" y="282">.-</text>
+  </g>
+  <g data-code="-." data-symbol="N">
+    <circle class="node" cx="565" cy="265" r="31"/>
+    <text text-anchor="middle" class="symbol" x="565" y="264">N</text>
+    <text text-anchor="middle" class="code" x="565" y="282">-.</text>
+  </g>
+  <g data-code="--" data-symbol="M">
+    <circle class="node" cx="790" cy="265" r="31"/>
+    <text text-anchor="middle" class="symbol" x="790" y="264">M</text>
+    <text text-anchor="middle" class="code" x="790" y="282">--</text>
+  </g>
+  <g data-code="..." data-symbol="S">
+    <circle class="selected" cx="55" cy="360" r="31"/>
+    <text text-anchor="middle" class="symbol" x="55" y="359">S</text>
+    <text text-anchor="middle" class="code" x="55" y="377">...</text>
+  </g>
+  <g data-code="..-" data-symbol="U">
+    <circle class="node" cx="165" cy="360" r="31"/>
+    <text text-anchor="middle" class="symbol" x="165" y="359">U</text>
+    <text text-anchor="middle" class="code" x="165" y="377">..-</text>
+  </g>
+  <text text-anchor="middle" class="heading" x="520" y="349">Selected path: ... resolves to S</text>
+  <text text-anchor="middle" class="note" x="520" y="378">Only a partial subtree is shown.</text>
+  <text text-anchor="middle" class="note" x="450" y="431">Shared prefixes reuse nodes; only mapped nodes produce characters.</text>
+</svg>

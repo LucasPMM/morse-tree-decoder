@@ -3,7 +3,7 @@
 Morse Tree Decoder (`morse-tree-decoder`) is a C command-line decoder based on a
 file-backed binary trie. A dot selects the left child and a dash selects the
 right child. The root and intermediate nodes may be empty; only mapped nodes
-represent decoded characters. Roadmap phases 4-6 implement the contract below.
+represent decoded characters. The implemented contract is described below.
 
 ## Build and command line
 
@@ -16,8 +16,8 @@ Build from the repository root with `make`, then execute:
 ./morse --help
 ```
 
-The executable name remains `morse`; the selected repository name does not rename
-the binary or change the remote yet. Accept no arguments or exactly one of
+The executable name remains `morse`, independently of the repository name.
+Accept no arguments or exactly one of
 `-a`, `--print-tree`, and `--help`. Unknown options, filenames, repeated options,
 and extra arguments fail with an English diagnostic and a nonzero exit status.
 
@@ -171,5 +171,5 @@ formatting/static-analysis/coverage checks. Every job and step has a timeout,
 repository permissions are read-only, and checkout does not persist credentials.
 Checkout is pinned to the [verified v7.0.1 release commit](https://github.com/actions/checkout/releases/tag/v7.0.1).
 Runner tools were checked against the [official Ubuntu 24.04 image inventory](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md).
-A hosted run requires an approved commit/push; local verification is not presented
+A hosted run must be confirmed separately; local verification is not presented
 as hosted CI success.
