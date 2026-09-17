@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test (${{ matrix.compiler }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang-18]
+    env:
+      CC: ${{ matrix.compiler }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+
+      - name: Build and run all tests
+        run: make -j2 test
+        timeout-minutes: 5
+
+  sanitizers:
+    name: Address, undefined behavior, and leak sanitizers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CC: gcc
+      ASAN_OPTIONS: detect_leaks=1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+
+      - name: Run sanitized tests with leak detection
+        run: make -j2 sanitize
+        timeout-minutes: 5
+
+  quality:
+    name: Formatting, static analysis, and coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      CC: gcc
+      CLANG_FORMAT: clang-format-18
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          persist-credentials: false
+
+      - name: Check source formatting
+        run: make check-format
+        timeout-minutes: 2
+
+      - name: Run GCC static analysis
+        run: make -j2 analyze
+        timeout-minutes: 3
+
+      - name: Run tests with coverage instrumentation
+        run: make -j2 coverage
+        timeout-minutes: 5
